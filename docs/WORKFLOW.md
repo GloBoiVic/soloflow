@@ -1,55 +1,45 @@
 # SoloFlow Workflow
 
-SoloFlow separates a durable lead context from fresh implementation contexts while
-keeping the same model and project intent.
-
-## Components
+SoloFlow uses one long-lived lead and fresh same-model worker contexts on one active
+repository branch.
 
 | Component | Responsibility |
 |---|---|
-| `solo-flow` | Developer interaction, exploration, planning, delegation, state, and closure |
+| `solo-flow` | Developer interaction, exploration, planning, Git lifecycle, delegation, and closure |
 | `solo-flow-worker` | Fresh `ARCHITECT`, `BUILD`, `VALIDATE`, or `REVIEW` context |
 | `PLAN.md` | Workstream control plane and task state |
-| `tasks/T###-*.md` | Durable implementation assignment and completion receipt |
+| `tasks/T###-*.md` | Implementation assignment and completion receipt |
 | `VALIDATION.md` | Independent acceptance evidence |
 | `REVIEW.md` | Independent review findings |
-| `memory.md` | Optional durable project continuity |
+| `memory.md` | Durable project continuity after closure |
 
 ## Classification
 
 ### Small
 
-An obvious, localized, low-consequence change. SoloFlow implements directly and runs a
-targeted check. No full workstream is required unless useful.
+Solo explores, implements directly, runs a targeted check, and finishes. No approval or
+feature branch is required unless the change proves more consequential.
 
 ### Feature
 
-Normal product or engineering work. SoloFlow explores, creates a plan, waits for approval,
-creates a linked worktree, decomposes coherent tasks, dispatches Build workers, validates,
-reviews, remediates when needed, and ends `READY_FOR_USER`.
+```text
+Solo → PLAN → task decomposition → developer approval
+→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW → READY_FOR_USER
+→ merge approval → GIT END → /remember save
+```
 
 ### Critical
 
-Work where an incorrect interpretation or failure has material consequences. SoloFlow
-dispatches an Architect, obtains developer approval of semantics or architecture, then
-uses the Feature flow.
+```text
+Solo → PLAN → ARCHITECT → architecture/domain approval
+→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW → READY_FOR_USER
+```
+
+Critical work freezes semantics, invariants, examples, and required tests before coding.
 
 ## Context
 
-SoloFlow uses CodeGraph first for structural investigation and verifies important findings
-against source. If CodeGraph is unavailable, it uses targeted search. Workers receive
-focused queries, explicit non-indexed context paths, relevant dependency receipts, and
-bounded write/validation instructions. Workers follow relevant dependencies without
-turning the task into repository-wide exploration; an unresolved required dependency is
-reported as `BLOCKED`.
-
-## Validation
-
-Browser-visible changes require Local Host or another local browser tool when available:
-
-```text
-discover → snapshot/read → interact → verify
-```
-
-If no browser-capable tool exists, record `BLOCKED` or `NEEDS_BROWSER_VALIDATION` rather
-than claiming UI validation passed.
+Solo explores broadly with CodeGraph first when available and targeted source inspection
+otherwise. Workers receive the workstream contract and may follow task-relevant
+dependencies without unrelated repository archaeology. Tracked project context is
+naturally present on the feature branch; no context-copy mechanism is needed.

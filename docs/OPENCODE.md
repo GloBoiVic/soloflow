@@ -34,38 +34,19 @@ OpenCode version. The worker cannot recursively spawn workers.
 }
 ```
 
-Change the parent model once. Keep MCP configuration separate from workflow identity.
-Preserve CodeGraph and Local Host when available.
+## Worker roles
 
-## Worker dispatch contract
+Every dispatch identifies `WORKTREE` as `NONE` and provides the active repository root,
+branch/base SHA, workstream paths, owned artifact, dependencies, and role contract.
+`WORKTREE` is not a normal role in branch-first SoloFlow.
 
-Every dispatch begins with:
+## Specialist skills and MCPs
 
-```text
-ROLE
-REPOSITORY_ROOT
-WORKTREE
-BASE_SHA
-WORKSTREAM
-WORKSTREAM_DIR
-PLAN
-OWNED_ARTIFACT
-ARCHITECTURE
-TASK
-DEPENDENCIES
-```
-
-Then include only outcome, acceptance, relevant invariants, constraints, known entry
-points, and definition of done. Workers may inspect task-relevant dependencies but do
-not perform general repository exploration. An unresolved required dependency is
-`BLOCKED`.
-
-Canonical artifacts are pre-created by Solo: `ARCHITECTURE.md`,
-`tasks/T###-<slug>.md`, `VALIDATION.md`, or `REVIEW.md`. Workers never invent alternate
-paths or `receipts/` directories. Solo verifies the exact artifact and terminal status
-before advancing state.
+Specialist skills are global and opt-in. CodeGraph and Local Host are optional MCPs kept
+separate from workflow configuration. Use them when relevant; do not preload unrelated
+skills or claim browser validation without a browser-capable tool.
 
 ## Legacy station
 
 The old Vike configuration is not part of normal SoloFlow operation. Restore it only by
-deliberately changing the active OpenCode configuration back to the legacy setup.
+deliberately changing the active OpenCode configuration.

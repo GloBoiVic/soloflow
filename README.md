@@ -3,7 +3,7 @@
 SoloFlow is a single-model engineering workflow for AI coding agents.
 
 It provides a long-lived engineering lead, fresh role-based worker contexts, selective
-CodeGraph investigation, linked-worktree safety, task receipts, independent validation,
+CodeGraph investigation, branch-first execution, task receipts, independent validation,
 review, and durable project memory without a heterogeneous specialist-agent fleet.
 
 ## Get started
@@ -27,8 +27,8 @@ Read the [setup guide](docs/OPENCODE.md) before editing configuration.
 
 ```text
 Small:    SoloFlow → implement → targeted check → done
-Feature:  SoloFlow → PLAN → tasks → worktree → BUILD → VALIDATE → REVIEW
-Critical: SoloFlow → PLAN → ARCHITECT → approval → tasks → BUILD → VALIDATE → REVIEW
+Feature:  SoloFlow → PLAN → approval → solo/<slug> → BUILD → VALIDATE → REVIEW
+Critical: SoloFlow → PLAN → ARCHITECT → approval → solo/<slug> → BUILD → VALIDATE → REVIEW
 ```
 
 SoloFlow explores the repository itself. It uses CodeGraph first when available and

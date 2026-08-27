@@ -7,5 +7,5 @@ and focused. Do not import the legacy Vike lifecycle or specialist-agent hierarc
 - `solo-flow-worker` is the only normal child and inherits the parent model.
 - Use CodeGraph first for structural investigation when an index is available.
 - Use Local Host, or another local browser tool, for browser-visible validation when available.
-- Preserve task receipts and linked-worktree safety; never commit, push, merge, reset, or clean up automatically.
+- Preserve task receipts and branch-first Git safety; never commit, push, merge, reset, or clean up automatically.
 - Do not persist secrets, transcripts, or large command output.

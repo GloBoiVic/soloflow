@@ -1,25 +1,34 @@
-# SoloFlow Worktrees
+# SoloFlow Branches
 
-Feature and Critical implementation normally uses a linked worktree. Solo dispatches the
-generic worker with `ROLE: WORKTREE`; there is no separate Worktrees agent and no
-`READY.md` artifact.
+SoloFlow is branch-first. Feature and Critical work uses the normal repository checkout,
+not a linked worktree.
 
-Before creation, inspect:
+## GIT START
+
+Before branch creation:
 
 ```bash
-git status --short
+git branch --show-current
 ```
 
-Use:
+Meaningful unrelated dirty changes block the operation. Do not silently stash, commit,
+discard, reset, rebase, or switch branches.
 
-```text
-branch: solo/<workstream-slug>
-worktree: ../<repo>--wt--<workstream-slug>
+After developer approval:
+
+```bash
+git switch -c solo/<workstream-slug>
 ```
 
-Record the full base SHA, branch, and path in `PLAN.md`. Confirm each exact
-repository-changing command immediately before running it. Never silently stash,
-discard, commit, push, merge, rebase, reset, switch branches, or remove worktrees.
-The WORKTREE worker returns the exact cwd, branch, base SHA, context status, and blockers.
-BUILD, VALIDATE, and REVIEW then use that same cwd. Preserve the worktree for
-`READY_FOR_USER` inspection.
+Verify the branch and status, then record the branch and full base SHA in `PLAN.md` and
+`ACTIVE.md`. Solo, workers, editor, dev server, Git diff, and Local Host all use this
+same repository root and branch until merge or explicit abandonment.
+
+## GIT END
+
+After explicit merge approval, verify status and diff, commit the feature branch, switch
+to `main`, verify `main`, merge the feature branch, and verify the merge. Do not silently
+push, force, squash, rebase, or delete an unmerged branch.
+
+Linked worktrees remain an explicit future technique for parallel work, not normal
+SoloFlow runtime behavior.

@@ -1,20 +1,20 @@
 # SoloFlow Dispatch
 
-SoloFlow keeps central state in `PLAN.md` and durable implementation history in task
-receipts.
+SoloFlow uses one active workstream and one `solo/<slug>` branch per repository.
 
 ## Lifecycle
 
 ```text
-request → classification → Solo exploration → PLAN → approval when required
-→ linked worktree → BUILD → VALIDATE → REVIEW → remediation → READY_FOR_USER
+request → classify → Solo explores → PLAN → approval when required
+→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW
+→ READY_FOR_USER → merge approval → GIT END → /remember save
 ```
 
-Small one-liners may skip dispatch. Every other code-changing request creates or resumes
+Small, obvious changes may stay on the current branch. Feature and Critical work create
 `dispatch/ACTIVE.md` and `dispatch/workstreams/<slug>/PLAN.md` before implementation.
-Never create these files at the repository root.
+Critical work also requires approved `ARCHITECTURE.md` and domain invariants.
 
-## Artifacts
+## Structure
 
 ```text
 dispatch/
@@ -22,38 +22,26 @@ dispatch/
 ├── COMPLETED.md
 └── workstreams/<slug>/
     ├── PLAN.md
-    ├── ARCHITECTURE.md       # optional
+    ├── ARCHITECTURE.md       # Critical or meaningful architecture only
     ├── tasks/T###-<slug>.md
     ├── VALIDATION.md
     └── REVIEW.md
 ```
 
-There is no normal Explore worker, `EXPLORATION.md`, `READY.md`, Tester worker, or
-Documenter worker. `solo-flow-worker` handles the WORKTREE role when an execution root
-is required.
+`PLAN.md` owns scope, acceptance, branch/base SHA, task state, current phase, next action,
+and concerns. Task files preserve implementation receipts. Each role owns only its
+artifact; downstream artifacts reference receipts rather than copy them.
 
-`ACTIVE.md` is a small root pointer. `PLAN.md` owns scope, acceptance, task state,
-current phase, next action, and worktree details. Each worker writes only its assigned
-artifact. Later workers receive only relevant dependency receipts.
+## One active branch
 
-After approval, WORKTREE prepares and verifies the linked execution root. BUILD, VALIDATE,
-and REVIEW all use that same exact cwd. Before BUILD, Solo creates the exact assignment
-at `dispatch/workstreams/<slug>/tasks/T###-<slug>.md` in that worktree. BUILD must not
-start without it and must not invent a root-level receipt or `receipts/` directory.
-VALIDATE starts only after every BUILD task is `DONE`; REVIEW starts only after validation
-is `PASS`.
+Before new Feature/Critical work, inspect `git branch --show-current`, `git status --short`,
+and `dispatch/ACTIVE.md`. A related request continues on the current branch. An unrelated
+request is blocked until the active workstream is merged or explicitly abandoned.
 
-Solo performs closure checks from `REPOSITORY_ROOT`: every required artifact exists,
-`dispatch/COMPLETED.md` was appended, and `dispatch/ACTIVE.md` is cleared. Missing
-evidence keeps the workstream active and cannot produce `READY_FOR_USER`.
+## Git end
 
-## Receipts
-
-Each receipt has one canonical owner. Build receipts belong to task files; cross-task
-validation belongs to `VALIDATION.md`; review findings belong to `REVIEW.md`. Other
-artifacts reference receipts rather than copying them.
-
-## Closure
-
-Solo appends `COMPLETED.md`, clears `ACTIVE.md`, and leaves the branch/worktree available
-for developer inspection. `/remember save` is optional and is not a closure gate.
+After `VALIDATION.md` and `REVIEW.md` pass, Solo reports `READY_FOR_USER` and waits for
+merge approval. Solo then verifies the branch/status/diff, commits the feature branch,
+switches to `main`, merges `solo/<slug>`, verifies the merge, and safely cleans up only
+as explicitly approved. Push is never implicit. Finally append `COMPLETED.md`, clear
+`ACTIVE.md`, and run `/remember save`.

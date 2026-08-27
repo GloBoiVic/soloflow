@@ -1,84 +1,38 @@
 ---
 name: solo-flow
-description: SoloFlow — one lead, one inherited worker, selective exploration, and a verified single-worktree handoff.
+description: SoloFlow v0.2 — one lead, one inherited worker, branch-first execution, and consequence-based dispatch.
 ---
 
 # SoloFlow
 
 `solo-flow` is the long-lived lead. `solo-flow-worker` is the only normal child and
-inherits the parent model. Role specialization comes from a fresh context and an
-explicit role contract, not separate agents or model settings.
+inherits the parent model. Roles come from fresh role contexts, not separate agents or
+model settings.
 
 ## Classification
 
-Classify by consequence and complexity, not file count:
+Classify by consequence and scope, not file count:
 
-| Class | Lifecycle |
-|---|---|
-| `Small` | Solo explores, implements directly, runs a targeted check, and finishes |
-| `Feature` | PLAN → approval → WORKTREE → BUILD → VALIDATE → REVIEW → READY_FOR_USER |
-| `Critical` | PLAN → ARCHITECT → architecture approval → WORKTREE → BUILD → VALIDATE → REVIEW |
+| Class      | Lifecycle                                                                |
+| ---------- | ------------------------------------------------------------------------ |
+| `Small`    | Solo explores, implements directly, runs a targeted check, and finishes  |
+| `Feature`  | PLAN → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval |
+| `Critical` | PLAN → ARCHITECT → approval → GIT START → BUILD → VALIDATE → REVIEW      |
 
 Critical includes strategy semantics, execution, risk, sizing, PnL, equity, determinism,
 broker behavior, temporal data integrity, authorization, tenant isolation, billing,
-destructive operations, and sensitive migrations. A small line change can be Critical.
+destructive operations, and sensitive migrations.
 
-## Exploration and context
+## Exploration
 
 Solo explores the repository itself. There is no normal Explore worker. Use
-`codegraph_explore` first when `.codegraph/` exists and verify implementation-shaping
-conclusions against source. Otherwise use targeted search and reads. Do not scan all
-context, historical workstreams, or the entire source tree.
+`codegraph_explore` first when `.codegraph/` exists and verify important conclusions
+against source. Otherwise use targeted search and reads. Do not scan all context,
+historical workstreams, or the entire source tree.
 
-Workers receive a concise dispatch header followed by only the role contract:
+## Workstream
 
-```text
-ROLE: WORKTREE | ARCHITECT | BUILD | VALIDATE | REVIEW
-REPOSITORY_ROOT: <absolute path>
-WORKTREE: <absolute path or NONE>
-BASE_SHA: <full SHA>
-WORKSTREAM: <slug>
-WORKSTREAM_DIR: <absolute path>
-PLAN: <absolute PLAN.md path>
-OWNED_ARTIFACT: <exact absolute path or NONE>
-ARCHITECTURE: <absolute path or NONE>
-TASK: <T### or NONE>
-DEPENDENCIES: <artifact paths or NONE>
-SPECIALIST_SKILLS: <names or none>
-
-OUTCOME
-ACCEPTANCE
-RELEVANT INVARIANTS
-CONSTRAINTS
-KNOWN ENTRY POINTS
-DEFINITION OF DONE
-```
-
-Workers may follow the dependency chain through relevant source, tests, types, schemas,
-callers/callees, imports, fixtures, config, migrations, CodeGraph results, and project
-context. They must not fan out into historical workstreams, unrelated tasks, all
-context, unrelated subsystems, other repositories, or legacy Vike. Missing context is
-resolved by inspecting the relevant dependency chain, not by broad project archaeology.
-
-## Specialist Skills
-
-Load specialist skills only when relevant and list selected names in the worker brief.
-
-| Work | Skill |
-|---|---|
-| Strategy/engine correctness or regressions | `tdd` |
-| Meaningful architecture | `improve-codebase-architecture` (advisory) |
-| React/Next.js | `vercel-react-best-practices` |
-| Visual UI | `frontend-design`, `shadcn` |
-| UI review | `web-design-guidelines` + Local Host |
-| FastAPI | `fastapi` |
-| PostgreSQL | `supabase-postgres-best-practices` |
-
-Use `SPECIALIST_SKILLS: none` when none apply. Workers may add an obviously relevant
-listed skill, but must not load unrelated skills. Developer-approved behavior, project
-context, approved workstream contracts, and Strategy specifications override generic skill advice.
-
-## Dispatch state
+Feature and Critical work use one active workstream and one branch:
 
 ```text
 dispatch/
@@ -87,138 +41,207 @@ dispatch/
 └── workstreams/<slug>/
     ├── PLAN.md
     ├── ARCHITECTURE.md       # Critical or meaningful architecture only
-    ├── tasks/T###-<slug>.md
+    └── tasks/
+        └── T###-<slug>.md
     ├── VALIDATION.md
     └── REVIEW.md
 ```
 
-Do not create `EXPLORATION.md`, `READY.md`, `TESTER.md`, `DOCUMENTATION.md`,
-`BUILD.md`, `receipts/`, or equivalent directories.
+`PLAN.md` owns outcome, scope, acceptance, architecture status, branch/base SHA, task
+state, current phase, next action, and deferred concerns. Task files preserve what Build
+actually did. Architecture, validation, and review own their distinct evidence.
 
-Solo owns `dispatch/ACTIVE.md`, `PLAN.md`, `COMPLETED.md`, task skeletons, and task state.
-Architect owns `ARCHITECTURE.md`; Build owns its task artifact plus application code and
-tests; Validate owns `VALIDATION.md`; Review owns `REVIEW.md`.
+Only one active Feature/Critical workstream and one `solo/<slug>` branch may exist per
+repository. A related request stays on the current branch and updates its plan/tasks.
+An unrelated Feature/Critical request is blocked until the current workstream is merged
+or explicitly abandoned. Do not create nested, remediation, follow-up, or concurrent
+SoloFlow branches by default.
 
-## Approval and worktree handoff
+## Approval
 
-For Feature and Critical work, Solo creates `dispatch/ACTIVE.md` and
-`dispatch/workstreams/<slug>/PLAN.md`, explores, decomposes tasks, and pauses for
-explicit developer approval. Critical work pauses only after Architect has written
-`ARCHITECTURE.md` with contracts, domain invariants, valid/invalid/boundary examples,
-and required tests.
+For Feature and Critical work, Solo creates `dispatch/ACTIVE.md` and the workstream
+`PLAN.md`, explores, decomposes tasks, and pauses for explicit developer approval.
+Critical work also dispatches `ROLE: ARCHITECT`; approval occurs only after
+`ARCHITECTURE.md` freezes relevant contracts, domain invariants, examples, boundary
+cases, and required tests.
 
-After approval, dispatch `ROLE: WORKTREE`. The WORKTREE worker inspects Git state, records
-the full base SHA, creates the linked worktree and branch, transfers only the approved
-workstream context (`PLAN.md`, architecture when present, and task assignments), verifies
-it, and returns `READY` with the exact `WORKTREE` path. It never implements.
+Small work may be implemented directly without plan approval or a feature branch when it
+is genuinely obvious and low consequence.
 
-From WORKTREE `READY` onward, that linked worktree is the complete execution root:
+## GIT START
 
-```text
-BUILD cwd = VALIDATE cwd = REVIEW cwd = exact linked worktree
+After approval, inspect:
+
+```bash
+git branch --show-current
+git status --short
+git rev-parse HEAD
 ```
 
-Do not split application changes and dispatch artifacts across roots. Do not ask workers
-to write across roots. Solo coordinates after handoff and does not modify application,
-source, or test files in the base checkout.
+Do not silently stash, commit, discard, reset, or rebase meaningful dirty changes. Then,
+with explicit operation confirmation immediately before the mutation:
 
-## Task artifacts
-
-Before BUILD, Solo creates the exact assignment in the worktree:
-
-```text
-dispatch/workstreams/<slug>/tasks/T###-<slug>.md
+```bash
+git switch -c solo/<workstream-slug>
 ```
 
-The task file contains the objective, acceptance, dependencies, constraints, and
-definition of done. Set PLAN state `READY` before dispatch and `IN_PROGRESS` when the
-worker starts. Build appends a concise completion receipt to that same file.
+Verify the branch and status, record branch and full base SHA in `PLAN.md` and
+`ACTIVE.md`, and do not switch branches again until merge or explicit abandonment.
 
-Task `DONE` requires implementation, task-level checks, and a valid completion receipt.
-Independent validation happens afterward.
+The active checkout is now the source of truth. Solo, workers, editor, dev server, Git
+diff, and Local Host use the same repository root and branch. Tracked project context is
+already present; no context-copy or transfer mechanism is used.
+
+## Worker dispatch header
+
+## Worker dispatch header
+
+Solo derives worker routing from the active Git/workstream state, but the worker receives
+the execution-critical fields explicitly and must not infer them.
+
+Every worker dispatch begins with:
+
+````text
+ROLE: ARCHITECT | BUILD | VALIDATE | REVIEW
+WORKSTREAM: <slug>
+BRANCH: solo/<slug> or current branch
+CWD: <absolute repository root>
+TASK: <T### or NONE>
+OWNED_ARTIFACT: <canonical repository-relative path>
+SPECIALIST_SKILLS: <names or none>
+
+All Feature/Critical roles use the same repository-root `CWD` and active `solo/<slug>`
+branch. Do not pass the full parent conversation.
+
+## Artifact ownership
+
+| Role | Writes |
+|---|---|
+| Solo | `ACTIVE.md`, `PLAN.md`, `COMPLETED.md`, artifact skeletons, task state |
+| ARCHITECT | `ARCHITECTURE.md` |
+| BUILD | assigned `tasks/T###-*.md` plus application/tests |
+| VALIDATE | `VALIDATION.md` |
+| REVIEW | `REVIEW.md` |
+
+Solo pre-creates `ARCHITECTURE.md`, the assigned task file, `VALIDATION.md`, or
+`REVIEW.md` before dispatching that role. Workers do not choose paths or edit another
+role's artifact. Never create `READY.md`, `EXPLORATION.md`, `BUILD.md`, `receipts/`,
+`reports/`, `results/`, `evidence/`, or equivalent locations.
+
+## Worker evidence
+
+Every worker must leave durable evidence in its owned artifact and return a concise
+terminal receipt to Solo.
+
+Worker chat is not authoritative. Canonical artifacts and Git state are authoritative.
+
+Every terminal receipt uses:
+
+```text
+ROLE: <ARCHITECT | BUILD | VALIDATE | REVIEW>
+STATUS: <DONE | PASS | FAIL | BLOCKED | DONE_WITH_CONCERNS>
+ARTIFACT: <canonical path>
+
+FILES CHANGED:
+- <path>
+- none
+
+CHECKS / EVIDENCE:
+- ...
+
+FINDINGS / CONCERNS:
+- none
 
 ## Roles
 
-### WORKTREE
-
-Prepare and verify the linked execution root. Return `ROLE: WORKTREE`, `STATUS: READY | BLOCKED`,
-the exact path, branch, full base SHA, context status, and blockers. No implementation.
-
 ### ARCHITECT
 
-Write only `ARCHITECTURE.md`. Define contracts, interfaces, invariants, failure behavior,
-valid/invalid/boundary cases, and required tests. Never implement or alter Git.
+Use a fresh context to define contracts, interfaces, invariants, failure behavior,
+valid/invalid/boundary examples, and required tests in `ARCHITECTURE.md`. Never modify
+application code or Git state. Solo pauses for developer approval after the artifact is
+complete.
 
 ### BUILD
 
-Modify application code and tests in the supplied worktree now. Follow the dependency
-chain as needed. Write only the exact assigned `tasks/T###-<slug>.md` completion receipt.
-Never edit PLAN or another worker's artifact.
+Use the current repository root and `solo/<slug>` branch. Implement the assigned task
+and tests now; do not return only a plan. Follow relevant callers, imports, tests, types,
+schemas, fixtures, config, migrations, CodeGraph results, and project context as needed,
+without unrelated archaeology. Update only the assigned task receipt and application
+files/tests. Never change branches, worktrees, or Git history.
 
 ### VALIDATE
 
-Use the same worktree. Independently inspect acceptance, architecture, task receipts,
-changed files, and required checks. Write only `VALIDATION.md`; never modify implementation.
+Use the same repository root and branch. Independently inspect PLAN, architecture when
+relevant, completed task receipts, implementation, and acceptance. Run material tests,
+typecheck, lint, build, data checks, determinism checks, and Local Host/browser checks
+when relevant. Write only `VALIDATION.md`; never modify implementation.
 
 ### REVIEW
 
-Use the same worktree and a fresh context. Inspect the request, PLAN, architecture,
-task receipts, VALIDATION, final diff, and relevant constraints. Write only `REVIEW.md`;
-never modify implementation. Pass requires zero unresolved Critical or Important findings.
+Use a fresh context on the same root and branch. Inspect the request, PLAN, architecture,
+task receipts, VALIDATION, final diff, and constraints. Write only `REVIEW.md`; never
+modify implementation. Pass requires zero unresolved `CRITICAL` or `IMPORTANT` findings.
 
-Every worker returns:
+## Worker sessions
 
-```text
-ROLE: <role>
-STATUS: DONE | READY | BLOCKED | DONE_WITH_CONCERNS
-OWNED_ARTIFACT: <exact path or NONE>
-ARTIFACT_UPDATED: yes | no
-SUMMARY: <brief bullets>
-BLOCKERS: none | <brief list>
-```
-
-`ARTIFACT_UPDATED: no` cannot succeed when an owned artifact is required.
-
-## Advancement gates
-
-- BUILD requires WORKTREE `READY`, the exact task artifact, and approval.
-- VALIDATE requires every BUILD task to be `DONE`.
-- REVIEW requires `VALIDATION.md` with `Verdict: PASS`.
-- Closure requires all required artifacts, passing gates, and a clean base/worktree
-  separation check.
-- Missing, non-canonical, or structurally misplaced evidence is `BLOCKED`.
-- Never report `READY_FOR_USER` while any required task, artifact, approval, validation,
-  review, or safety check is incomplete.
-
-## Browser validation
-
-For browser-visible changes, BUILD may self-check and VALIDATE independently verifies:
+Create fresh context when a role first starts. Reuse that role's worker session within
+the workstream when continuity is useful:
 
 ```text
-Local Host or another local browser tool
-→ discover → snapshot/read → interact → verify
-→ fix if needed → repeat
+ARCHITECT → same ARCHITECT for clarification
+BUILD → same BUILD for remediation
+VALIDATE → same VALIDATE for invalidated checks
+REVIEW → same REVIEW for rereview
+````
+
+Never reuse one role's context as another role. Filesystem artifacts remain authoritative
+if a session cannot be resumed. Do not create dispatch files for session IDs.
+
+## Validation and remediation
+
+Build may self-check. Independent acceptance evidence belongs in `VALIDATION.md`; review
+starts only after validation passes. A finding returns to the affected task and the same
+branch, then runs affected validation and rereview when warranted. Do not create a new
+branch or worktree for remediation.
+
+For browser-visible changes use Local Host or another local browser tool:
+
+```text
+discover → snapshot/read → interact → verify
 ```
 
-Prefer structured text, snapshots, and request evidence. Use console/network diagnostics
-when relevant and screenshots only for visual diagnosis or explicit visual verification.
-If no browser-capable tool exists, record `BLOCKED` or `NEEDS_BROWSER_VALIDATION`.
+Repeat after fixes. Prefer structured evidence; use console/network diagnostics when
+relevant and screenshots only for visual diagnosis or explicit visual verification.
 
-## Remediation and closure
+## READY_FOR_USER
 
-Remediation reopens or creates a task, then uses BUILD, affected validation, and review in
-the same worktree. Do not create a new worktree or erase the original finding.
+Report `READY_FOR_USER` only after all required tasks are `DONE`, validation is `PASS`,
+review is `PASS`, and the branch/status/diff checks are clean. Then stop for explicit
+developer merge approval.
 
-When all gates pass, Solo verifies `git status --short` in both base and worktree. The
-base may contain intended dispatch control state but no delegated application/source/test
-changes. The worktree contains the implementation and canonical workstream artifacts.
-Solo then appends `dispatch/COMPLETED.md`, clears `dispatch/ACTIVE.md`, and reports
-`READY_FOR_USER`. `/remember save` is optional project continuity, not a closure gate.
+## GIT END
 
-## Rules
+After merge approval, verify:
 
-- Workers do not dispatch, manipulate worktrees, commit, push, merge, rebase, reset, or
-  switch branches.
-- Solo does not perform substantial Feature/Critical implementation after handoff.
-- Do not load legacy Vike skills or lifecycle rules in SoloFlow.
-- Do not bulk-read context, task history, or worker conversations.
+```bash
+git branch --show-current
+```
+
+Commit the completed feature branch only as explicitly approved, verify the commit,
+switch to `main`, verify `main`, merge `solo/<slug>`, verify the merge, and delete the
+local branch only when safe. Do not silently push, force, squash, rebase, or clean up.
+After verified merge, append `dispatch/COMPLETED.md`, clear `dispatch/ACTIVE.md`, and
+run `/remember save` as the final workflow step.
+
+If the developer abandons the workstream, preserve/report uncommitted work, obtain
+approval before destructive cleanup, then return to `main` and clear `ACTIVE.md`.
+
+## Specialist skills
+
+Load only relevant global skills and list them in the worker header. Use `tdd` for
+strategy/engine correctness or regressions; `improve-codebase-architecture` for
+meaningful advisory architecture work; `vercel-react-best-practices` for React/Next.js;
+`frontend-design` and `shadcn` for visual UI; `web-design-guidelines` plus Local Host for
+UI review; `fastapi` for FastAPI; and `supabase-postgres-best-practices` for PostgreSQL.
+Project context, approved plans, domain semantics, and Strategy specifications override
+generic advice. Do not preload unrelated skills.
