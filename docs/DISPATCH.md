@@ -7,7 +7,7 @@ SoloFlow uses one active workstream and one `solo/<slug>` branch per repository.
 ```text
 request → classify → Solo explores → PLAN → approval when required
 → git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW
-→ READY_FOR_USER → merge approval → GIT END → /remember save
+→ READY_FOR_USER → merge approval → GIT END → close dispatch
 ```
 
 Small, obvious changes may stay on the current branch. Feature and Critical work create
@@ -44,4 +44,4 @@ After `VALIDATION.md` and `REVIEW.md` pass, Solo reports `READY_FOR_USER` and wa
 merge approval. Solo then verifies the branch/status/diff, commits the feature branch,
 switches to `main`, merges `solo/<slug>`, verifies the merge, and safely cleans up only
 as explicitly approved. Push is never implicit. Finally append `COMPLETED.md`, clear
-`ACTIVE.md`, and run `/remember save`.
+`ACTIVE.md`. Git end and dispatch state are the source of truth for cleanup.

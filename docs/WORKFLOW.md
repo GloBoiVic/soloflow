@@ -11,7 +11,6 @@ repository branch.
 | `tasks/T###-*.md` | Implementation assignment and completion receipt |
 | `VALIDATION.md` | Independent acceptance evidence |
 | `REVIEW.md` | Independent review findings |
-| `memory.md` | Durable project continuity after closure |
 
 ## Classification
 
@@ -25,7 +24,7 @@ feature branch is required unless the change proves more consequential.
 ```text
 Solo → PLAN → task decomposition → developer approval
 → git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW → READY_FOR_USER
-→ merge approval → GIT END → /remember save
+→ merge approval → GIT END → close dispatch
 ```
 
 ### Critical

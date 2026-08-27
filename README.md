@@ -4,7 +4,7 @@ SoloFlow is a single-model engineering workflow for AI coding agents.
 
 It provides a long-lived engineering lead, fresh role-based worker contexts, selective
 CodeGraph investigation, branch-first execution, task receipts, independent validation,
-review, and durable project memory without a heterogeneous specialist-agent fleet.
+review, and durable dispatch state without a heterogeneous specialist-agent fleet.
 
 ## Get started
 

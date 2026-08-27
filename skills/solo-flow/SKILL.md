@@ -230,8 +230,8 @@ git branch --show-current
 Commit the completed feature branch only as explicitly approved, verify the commit,
 switch to `main`, verify `main`, merge `solo/<slug>`, verify the merge, and delete the
 local branch only when safe. Do not silently push, force, squash, rebase, or clean up.
-After verified merge, append `dispatch/COMPLETED.md`, clear `dispatch/ACTIVE.md`, and
-run `/remember save` as the final workflow step.
+After verified merge, append `dispatch/COMPLETED.md` and clear `dispatch/ACTIVE.md` as
+the final workflow cleanup. Git end and dispatch state are authoritative.
 
 If the developer abandons the workstream, preserve/report uncommitted work, obtain
 approval before destructive cleanup, then return to `main` and clear `ACTIVE.md`.
