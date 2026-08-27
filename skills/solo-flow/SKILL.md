@@ -156,17 +156,17 @@ Solo verifies material claims against Git and canonical artifacts before advanci
 
 ## Worker sessions
 
-Create fresh context when a role first starts. Reuse that role's session when useful:
+Create fresh context when a role first starts. Reuse only within the same role:
 
 ```text
-ARCHITECT → same ARCHITECT for clarification
-BUILD → same BUILD for remediation
-VALIDATE → same VALIDATE for revalidation
-REVIEW → same REVIEW for rereview
+ARCHITECT → reuse once only after developer feedback
+BUILD → reuse once only for continuation/remediation
+VALIDATE → never reuse; start fresh after remediation
+REVIEW → never reuse; start fresh after remediation
 ```
 
-BUILD reuse is capped at the initial dispatch plus three returns. Further BUILD work uses
-a fresh BUILD worker on the same branch and workstream. Never reuse one role as another.
+After the allowed reuse, dispatch a fresh worker on the same branch and workstream. Never
+reuse one role as another.
 
 ## Advancement
 
