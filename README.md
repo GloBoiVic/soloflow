@@ -6,13 +6,20 @@ It provides a long-lived engineering lead, fresh role-based worker contexts, sel
 CodeGraph investigation, linked-worktree safety, task receipts, independent validation,
 review, and durable project memory without a heterogeneous specialist-agent fleet.
 
-## Quick start
+## Get started
 
-1. Add `/path/to/soloflow/skills` to OpenCode `skills.paths`.
-2. Configure `solo-flow` as the default agent and `solo-flow-worker` as its only child.
-3. Preserve CodeGraph and Local Host MCPs when available.
-4. Run `/init` in a project when project context is missing.
-5. Ask SoloFlow to make a change.
+Install the skills:
+
+```bash
+npx skills add GloBoiVic/soloflow
+```
+
+Then configure OpenCode with `solo-flow` as the default agent and
+`solo-flow-worker` as its only child. See the [OpenCode setup guide](docs/OPENCODE.md)
+for the minimal configuration.
+
+Run `/init` in a project when project context is missing, then ask SoloFlow to make a
+change.
 
 Read the [setup guide](docs/OPENCODE.md) before editing configuration.
 
@@ -28,6 +35,23 @@ SoloFlow explores the repository itself. It uses CodeGraph first when available 
 targeted search as a fallback. Local Host is the preferred local browser validator, but
 another local browser tool may be used when Local Host is unavailable.
 
+## Specialist skills
+
+SoloFlow loads these optional global skills only when a task needs them:
+
+| Work | Skill |
+|---|---|
+| Strategy/engine correctness | `tdd` |
+| Architecture | `improve-codebase-architecture` |
+| React/Next.js | `vercel-react-best-practices` |
+| Visual UI | `frontend-design`, `shadcn` |
+| UI review | `web-design-guidelines` + Local Host |
+| FastAPI | `fastapi` |
+| PostgreSQL | `supabase-postgres-best-practices` |
+
+Specialist advice is advisory. Developer-approved behavior, project architecture,
+workstream contracts, and Strategy specifications take precedence.
+
 ## Documentation
 
 - [Workflow](docs/WORKFLOW.md)
@@ -35,6 +59,12 @@ another local browser tool may be used when Local Host is unavailable.
 - [Worktrees](docs/WORKTREES.md)
 - [OpenCode](docs/OPENCODE.md)
 
-## Repository
+## Optional integrations
 
-This is a standalone local SoloFlow project. It has no GitHub remote by default.
+SoloFlow works without external integrations. When available, CodeGraph improves
+structural investigation and Local Host provides local browser validation. Other local
+browser tools can be used when Local Host is unavailable.
+
+## License
+
+SoloFlow is available under the [MIT License](LICENSE).

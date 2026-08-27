@@ -44,6 +44,7 @@ OWNED_ARTIFACT: <exact absolute path or NONE>
 ARCHITECTURE: <absolute path or NONE>
 TASK: <T### or NONE>
 DEPENDENCIES: <artifact paths or NONE>
+SPECIALIST_SKILLS: <names or none>
 
 OUTCOME
 ACCEPTANCE
@@ -58,6 +59,24 @@ callers/callees, imports, fixtures, config, migrations, CodeGraph results, and p
 context. They must not fan out into historical workstreams, unrelated tasks, all
 context, unrelated subsystems, other repositories, or legacy Vike. Missing context is
 resolved by inspecting the relevant dependency chain, not by broad project archaeology.
+
+## Specialist Skills
+
+Load specialist skills only when relevant and list selected names in the worker brief.
+
+| Work | Skill |
+|---|---|
+| Strategy/engine correctness or regressions | `tdd` |
+| Meaningful architecture | `improve-codebase-architecture` (advisory) |
+| React/Next.js | `vercel-react-best-practices` |
+| Visual UI | `frontend-design`, `shadcn` |
+| UI review | `web-design-guidelines` + Local Host |
+| FastAPI | `fastapi` |
+| PostgreSQL | `supabase-postgres-best-practices` |
+
+Use `SPECIALIST_SKILLS: none` when none apply. Workers may add an obviously relevant
+listed skill, but must not load unrelated skills. Developer-approved behavior, project
+context, approved workstream contracts, and Strategy specifications override generic skill advice.
 
 ## Dispatch state
 
