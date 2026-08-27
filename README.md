@@ -28,7 +28,9 @@ Read the [setup guide](docs/OPENCODE.md) before editing configuration.
 ```text
 Small:    SoloFlow → implement → targeted check → done
 Feature:  SoloFlow → PLAN → approval → solo/<slug> → BUILD → VALIDATE → REVIEW
+          → READY_FOR_USER → merge approval → GIT END
 Critical: SoloFlow → PLAN → ARCHITECT → approval → solo/<slug> → BUILD → VALIDATE → REVIEW
+          → READY_FOR_USER → merge approval → GIT END
 ```
 
 SoloFlow explores the repository itself. It uses CodeGraph first when available and
