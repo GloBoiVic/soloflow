@@ -13,10 +13,10 @@ Fresh context separates roles; same-role sessions may be reused.
 
 Classify by consequence and scope, not file count:
 
-| Class | Lifecycle |
-|---|---|
-| `Small` | Solo explores, implements directly, runs a targeted check, and finishes |
-| `Feature` | PLAN → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval → GIT END |
+| Class      | Lifecycle                                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Small`    | Solo explores, implements directly, runs a targeted check, and finishes                                               |
+| `Feature`  | PLAN → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval → GIT END                                    |
 | `Critical` | PLAN → ARCHITECT → reconcile PLAN/tasks → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval → GIT END |
 
 Small changes need no plan approval or branch when genuinely obvious and low consequence.
@@ -107,13 +107,13 @@ project context, and CodeGraph. They must not perform unrelated repository archa
 
 ## Ownership and tasks
 
-| Actor | Writes |
-|---|---|
-| Solo | `ACTIVE.md`, `PLAN.md`, `COMPLETED.md`, task assignments, task state |
-| ARCHITECT | `ARCHITECTURE.md` |
-| BUILD | assigned `tasks/T###-*.md` plus application/tests |
-| VALIDATE | `VALIDATION.md` |
-| REVIEW | `REVIEW.md` |
+| Actor     | Writes                                                               |
+| --------- | -------------------------------------------------------------------- |
+| Solo      | `ACTIVE.md`, `PLAN.md`, `COMPLETED.md`, task assignments, task state |
+| ARCHITECT | `ARCHITECTURE.md`                                                    |
+| BUILD     | assigned `tasks/T###-*.md` plus application/tests                    |
+| VALIDATE  | `VALIDATION.md`                                                      |
+| REVIEW    | `REVIEW.md`                                                          |
 
 Solo pre-creates the role artifact before dispatch. Only BUILD receives a `T###` task.
 Task assignment and completion remain in the same task file:
@@ -121,6 +121,8 @@ Task assignment and completion remain in the same task file:
 ```text
 READY → IN_PROGRESS → DONE | BLOCKED | DONE_WITH_CONCERNS
 ```
+
+A `DONE` task may return to `IN_PROGRESS` only for remediation of a VALIDATE or REVIEW finding it owns. This is remediation of existing scope, not a new task.
 
 Task `DONE` requires implementation, task-level checks, and a complete receipt. Workers
 must not edit another role's artifact or create alternate receipt directories.
@@ -161,22 +163,51 @@ Create fresh context when a role first starts. Reuse only within the same role:
 ```text
 ARCHITECT → reuse once only after developer feedback
 BUILD → reuse once only for continuation/remediation
-VALIDATE → never reuse; start fresh after remediation
+VALIDATE → use fresh context for initial independent validation; reuse the same worker for
+targeted revalidation of its own findings; start fresh only when materially changed
+implementation requires a new independent full validation
 REVIEW → never reuse; start fresh after remediation
 ```
 
-After the allowed reuse, dispatch a fresh worker on the same branch and workstream. Never
-reuse one role as another.
+After the allowed ARCHITECT or BUILD reuse, dispatch a fresh worker on the same branch and
+workstream. Never reuse one role as another.
 
 ## Advancement
 
 - BUILD requires approval, the active `solo/<slug>` branch, and its exact task artifact.
 - VALIDATE starts only after every BUILD task is `DONE`.
 - REVIEW starts only after `VALIDATION.md` is `PASS`.
-- Findings return to BUILD on the same branch; affected validation and review rerun.
 - `READY_FOR_USER` requires all tasks `DONE`, validation `PASS`, review `PASS`, zero
   unresolved `CRITICAL`/`IMPORTANT`, and clean/understood Git state.
 - A missing or non-canonical artifact blocks advancement.
+
+## Validation remediation
+
+Classify each VALIDATE blocker as `PRODUCT` (production behavior, contract, persistence,
+financial semantics, safety, or architecture), `REGRESSION` (supported behavior or tests),
+or `TOOLING` (typing, lint, formatting, fixtures, harness, selectors, or validation
+infrastructure only).
+
+After remediation, rerun checks by classification:
+
+- `PRODUCT` → affected validation plus broader checks reasonably invalidated.
+- `REGRESSION` → affected tests/checks plus directly dependent validation.
+- `TOOLING` → only the failed check and directly affected tests, unless production code changed.
+
+Previously passing independent evidence remains valid unless remediation could reasonably
+invalidate it. Do not rerun the entire validation matrix automatically.
+
+Validation and review findings normally return to the owning BUILD task; reopen that task
+and append remediation evidence to its artifact. Create a new `T###` task only for genuinely
+new approved scope that cannot reasonably belong to an existing task.
+
+After REVIEW remediation, rerun only the validation evidence reasonably invalidated by the change, then dispatch a fresh REVIEW worker. Previously passing independent validation remains valid unless the remediation could reasonably invalidate it.
+
+The initial independent VALIDATE pass does not count as a remediation cycle. After two
+`BUILD → targeted VALIDATE` remediation cycles in the same workstream, stop automatic
+cycling. Classify each remaining issue as `PRODUCT BLOCKER`, `VALIDATION / TOOLING DEBT`,
+or `NEW SCOPE`, and report the classification and smallest next action to the developer
+before continuing.
 
 ## Browser validation
 
@@ -186,7 +217,8 @@ For browser-visible changes, BUILD may self-check and VALIDATE independently ver
 discover → snapshot/read → interact → verify
 ```
 
-Use Local Host when connected, or another local browser tool. Repeat after fixes. Prefer
+Use Local Host when connected, or another local browser tool. Repeat affected browser checks
+after fixes. Prefer
 structured text, snapshots, and request evidence; use diagnostics when relevant and
 screenshots only for visual diagnosis. Without a browser-capable tool, record the limitation.
 
