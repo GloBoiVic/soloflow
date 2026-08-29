@@ -136,12 +136,14 @@ it never implements or changes Git.
 dependencies, and writes its completion receipt. It never changes branches or Git history.
 
 `VALIDATE` independently checks acceptance, implementation, receipts, tests, builds, data
-checks, determinism, and Local Host when relevant. It writes `VALIDATION.md` and never
-fixes implementation.
+checks, determinism, and Local Host when relevant. It writes `VALIDATION.md` and diagnoses
+only; it never edits application, test, fixture, selector, harness, workflow, or other
+implementation code.
 
 `REVIEW` independently checks the request, PLAN, architecture, task receipts, validation,
-diff, and constraints. It writes `REVIEW.md` and never fixes implementation. Pass requires
-zero unresolved `CRITICAL` or `IMPORTANT` findings.
+diff, and constraints. It writes `REVIEW.md` and diagnoses and judges only; it never edits
+application, test, fixture, selector, harness, workflow, or other implementation code. Pass
+requires zero unresolved `CRITICAL` or `IMPORTANT` findings.
 
 Every worker returns a concise receipt:
 
@@ -163,14 +165,13 @@ Create fresh context when a role first starts. Reuse only within the same role:
 ```text
 ARCHITECT → reuse once only after developer feedback
 BUILD → reuse once only for continuation/remediation
-VALIDATE → use fresh context for initial independent validation; reuse the same worker for
-targeted revalidation of its own findings; start fresh only when materially changed
-implementation requires a new independent full validation
-REVIEW → never reuse; start fresh after remediation
+VALIDATE → fresh context for initial independent validation and every targeted validation
+REVIEW → fresh context for initial independent review and every targeted rereview
 ```
 
 After the allowed ARCHITECT or BUILD reuse, dispatch a fresh worker on the same branch and
-workstream. Never reuse one role as another.
+workstream. Never reuse one role as another. Targeted VALIDATE and REVIEW workers remain
+independent of BUILD and of each other.
 
 ## Advancement
 
@@ -188,26 +189,49 @@ financial semantics, safety, or architecture), `REGRESSION` (supported behavior 
 or `TOOLING` (typing, lint, formatting, fixtures, harness, selectors, or validation
 infrastructure only).
 
-After remediation, rerun checks by classification:
+Every VALIDATE or REVIEW finding produces a concise remediation packet containing:
+classification, exact issue, owning BUILD task, affected files/seams, required fix, checks
+invalidated by the finding, and the smallest required revalidation/rereview scope.
 
-- `PRODUCT` → affected validation plus broader checks reasonably invalidated.
-- `REGRESSION` → affected tests/checks plus directly dependent validation.
-- `TOOLING` → only the failed check and directly affected tests, unless production code changed.
+After a finding, reopen the existing owning BUILD task and dispatch a narrowly scoped BUILD
+worker/session with the concise remediation packet, owning task, and relevant contracts as
+its starting context. The worker may follow directly affected dependencies needed to make
+the fix, but must not broaden into unrelated workstream scope. Production defects, tests,
+fixtures, selectors, and harness code that require edits remain BUILD-owned.
 
-Previously passing independent evidence remains valid unless remediation could reasonably
-invalidate it. Do not rerun the entire validation matrix automatically.
+Solo may directly repair validation environment state that does not change tracked product
+or test code, including resetting/recreating the dedicated test database, running its
+migrations/seeds, restarting workstream-owned test servers, resolving workstream-owned
+ports/processes, and rerunning commands. Solo must not modify application persistence,
+schemas, migrations, or terminate unknown/unowned processes as environment remediation.
 
-Validation and review findings normally return to the owning BUILD task; reopen that task
-and append remediation evidence to its artifact. Create a new `T###` task only for genuinely
-new approved scope that cannot reasonably belong to an existing task.
+After remediation, preserve previously passing independent evidence unless the change could
+reasonably invalidate it. Dispatch a fresh TARGETED VALIDATE worker for only the affected
+checks and directly dependent evidence. Do not automatically rerun the full validation
+matrix.
 
-After REVIEW remediation, rerun only the validation evidence reasonably invalidated by the change, then dispatch a fresh REVIEW worker. Previously passing independent validation remains valid unless the remediation could reasonably invalidate it.
+For a REVIEW finding, use:
+REVIEW finding → narrow BUILD remediation → targeted VALIDATE for invalidated evidence
+→ fresh TARGETED REVIEW → PASS
 
-The initial independent VALIDATE pass does not count as a remediation cycle. After two
-`BUILD → targeted VALIDATE` remediation cycles in the same workstream, stop automatic
-cycling. Classify each remaining issue as `PRODUCT BLOCKER`, `VALIDATION / TOOLING DEBT`,
-or `NEW SCOPE`, and report the classification and smallest next action to the developer
-before continuing.
+The targeted reviewer inspects the finding, relevant contract, remediation diff, affected
+task receipt, and targeted validation evidence rather than rereading the entire workstream
+by default.
+
+If VALIDATE fails before REVIEW has begun, a successful targeted validation proceeds to the
+initial broad REVIEW, not a targeted REVIEW.
+
+Escalate to full validation or review only when remediation materially changes broad
+authority, including architecture, domain or financial semantics, persistence or schema,
+API contract semantics, Strategy/Risk/execution/accounting behavior, or substantial
+cross-cutting implementation.
+
+A remediation return means a VALIDATE or REVIEW finding that sends work back to BUILD.
+The initial independent VALIDATE and REVIEW passes do not count as remediation returns.
+After two remediation returns total across VALIDATE and REVIEW in the same workstream, stop
+automatic cycling. Classify each remaining issue as `PRODUCT BLOCKER`, `VALIDATION / TOOLING
+DEBT`, or `NEW SCOPE`, and report the classification and smallest next action for developer
+approval before continuing.
 
 ## Browser validation
 
