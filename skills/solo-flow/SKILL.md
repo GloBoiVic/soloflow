@@ -184,10 +184,10 @@ independent of BUILD and of each other.
 
 ## Validation remediation
 
-Classify each VALIDATE blocker as `PRODUCT` (production behavior, contract, persistence,
-financial semantics, safety, or architecture), `REGRESSION` (supported behavior or tests),
-or `TOOLING` (typing, lint, formatting, fixtures, harness, selectors, or validation
-infrastructure only).
+Classify each VALIDATE or REVIEW finding as `PRODUCT` (production behavior, contract,
+persistence, financial semantics, safety, or architecture), `REGRESSION` (supported
+behavior or tests), or `TOOLING` (typing, lint, formatting, fixtures, harness, selectors,
+or validation infrastructure only).
 
 Every VALIDATE or REVIEW finding produces a concise remediation packet containing:
 classification, exact issue, owning BUILD task, affected files/seams, required fix, checks
