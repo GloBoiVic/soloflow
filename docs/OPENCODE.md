@@ -21,7 +21,7 @@ OpenCode version. The worker cannot recursively spawn workers.
   "agent": {
     "solo-flow": {
       "mode": "primary",
-      "model": "opencode/gpt-5.6-luna",
+      "model": "openai/gpt-5.6-luna",
       "variant": "medium",
       "permission": { "task": { "*": "deny", "solo-flow-worker": "allow" } }
     },
