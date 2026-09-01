@@ -8,9 +8,10 @@ repository branch.
 | `solo-flow` | Developer interaction, exploration, planning, Git lifecycle, delegation, and closure |
 | `solo-flow-worker` | Fresh `ARCHITECT`, `BUILD`, `VALIDATE`, or `REVIEW` context |
 | `PLAN.md` | Workstream control plane and task state |
-| `tasks/T###-*.md` | Implementation assignment and completion receipt |
-| `VALIDATION.md` | Independent acceptance evidence |
-| `REVIEW.md` | Independent review findings |
+| `tasks/T###-*.md` | Original implementation assignment and completion receipt |
+| `VALIDATION.md` | Original independent acceptance evidence |
+| `REVIEW.md` | Original independent review findings |
+| `remediations/R###-*/` | Immutable bounded BUILD → VALIDATION → REVIEW chain |
 
 ## Classification
 
@@ -42,3 +43,11 @@ Solo explores broadly with CodeGraph first when available and targeted source in
 otherwise. Workers receive the workstream contract and may follow task-relevant
 dependencies without unrelated repository archaeology. Tracked project context is
 naturally present on the feature branch; no context-copy mechanism is needed.
+
+## Remediation
+
+Completed execution and evidence artifacts are never reopened or overwritten. An approved-
+scope defect creates the next sequential `remediations/R###-<slug>/` directory with
+`BUILD.md`, `VALIDATION.md`, and `REVIEW.md`. A new requirement or architecture expansion
+returns to the relevant approval gate. BUILD worker/session reuse and the existing retry cap
+remain in force; only the artifact is new.

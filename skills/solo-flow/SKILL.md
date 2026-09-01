@@ -38,19 +38,27 @@ dispatch/
 └── workstreams/<slug>/
     ├── PLAN.md
     ├── ARCHITECTURE.md       # Critical or meaningful architecture only
-    ├── tasks/T###-<slug>.md  # BUILD tasks only
-    ├── VALIDATION.md
-    └── REVIEW.md
+    ├── tasks/T###-<slug>.md  # original BUILD tasks
+    ├── VALIDATION.md         # original validation
+    ├── REVIEW.md             # original review
+    └── remediations/R###-<slug>/
+        ├── BUILD.md
+        ├── VALIDATION.md
+        └── REVIEW.md
 ```
 
 `PLAN.md` owns outcome, classification, scope, acceptance, architecture status, branch
 and base SHA, task state, phase, next action, and concerns. It is not an implementation
-journal. Task files preserve what BUILD actually did. Architecture, validation, and review
-are role artifacts, not tasks.
+journal. Task files preserve what original BUILD actually did. Completed task, validation,
+review, and remediation artifacts are immutable evidence. Architecture and operational state
+remain separate from execution evidence.
 
 Only one Feature/Critical workstream and one `solo/<slug>` branch may be active per
 repository. Related follow-up or remediation stays on that branch. An unrelated request
 blocks until the current workstream is merged or explicitly abandoned.
+
+`ACTIVE.md` is mutable operational state: keep the workstream, stage, current `T###` or
+`R###` when applicable, role, and approval state current without adding execution narratives.
 
 ## Approval
 
@@ -63,8 +71,8 @@ examples, and required tests. Solo then reconciles PLAN and BUILD tasks, shows t
 combined contract, and waits for explicit developer approval.
 
 Before any dispatch or resumed worker call, reconcile material developer feedback into
-the canonical PLAN, ARCHITECTURE, and/or BUILD task. Never leave material feedback only
-in conversation context.
+the canonical PLAN, ARCHITECTURE, BUILD task, or remediation packet. Never leave material
+feedback only in conversation context.
 
 ## GIT START
 
@@ -96,7 +104,7 @@ ROLE: ARCHITECT | BUILD | VALIDATE | REVIEW
 WORKSTREAM: <slug>
 BRANCH: solo/<slug>
 CWD: <absolute repository root>
-TASK: <T### or NONE>
+TASK: <T### | R### | NONE>
 OWNED_ARTIFACT: <exact repository-relative path>
 SPECIALIST_SKILLS: <names or none>
 ```
@@ -111,18 +119,20 @@ project context, and CodeGraph. They must not perform unrelated repository archa
 | --------- | -------------------------------------------------------------------- |
 | Solo      | `ACTIVE.md`, `PLAN.md`, `COMPLETED.md`, task assignments, task state |
 | ARCHITECT | `ARCHITECTURE.md`                                                    |
-| BUILD     | assigned `tasks/T###-*.md` plus application/tests                    |
-| VALIDATE  | `VALIDATION.md`                                                      |
-| REVIEW    | `REVIEW.md`                                                          |
+| BUILD     | assigned `tasks/T###-*.md` or `remediations/R###-*/BUILD.md` plus application/tests |
+| VALIDATE  | `VALIDATION.md` or `remediations/R###-*/VALIDATION.md`               |
+| REVIEW    | `REVIEW.md` or `remediations/R###-*/REVIEW.md`                       |
 
-Solo pre-creates the role artifact before dispatch. Only BUILD receives a `T###` task.
-Task assignment and completion remain in the same task file:
+Solo pre-creates the role artifact before dispatch. Only BUILD receives a `T###` task or
+`R###` remediation. Original task assignment and completion remain in the same task file;
+remediation assignment and completion remain in `BUILD.md`:
 
 ```text
 READY → IN_PROGRESS → DONE | BLOCKED | DONE_WITH_CONCERNS
 ```
 
-A `DONE` task may return to `IN_PROGRESS` only for remediation of a VALIDATE or REVIEW finding it owns. This is remediation of existing scope, not a new task.
+Once a task is `DONE`, do not reopen or append to it. A VALIDATE or REVIEW finding gets a
+new sequential remediation packet under `remediations/`.
 
 Task `DONE` requires implementation, task-level checks, and a complete receipt. Workers
 must not edit another role's artifact or create alternate receipt directories.
@@ -132,18 +142,20 @@ must not edit another role's artifact or create alternate receipt directories.
 `ARCHITECT` defines contracts, invariants, failure behavior, examples, and required tests;
 it never implements or changes Git.
 
-`BUILD` implements the assigned task and tests on the active branch, follows relevant
-dependencies, and writes its completion receipt. It never changes branches or Git history.
+`BUILD` implements the assigned task or remediation and tests on the active branch, follows
+relevant dependencies, and writes its assigned completion receipt. It never changes branches
+or Git history, and never edits a completed evidence artifact.
 
 `VALIDATE` independently checks acceptance, implementation, receipts, tests, builds, data
-checks, determinism, and Local Host when relevant. It writes `VALIDATION.md` and diagnoses
-only; it never edits application, test, fixture, selector, harness, workflow, or other
-implementation code.
+checks, determinism, and Local Host when relevant. It writes its assigned validation artifact
+once and diagnoses only; it never edits application, test, fixture, selector, harness,
+workflow, or other implementation code, or overwrites completed evidence.
 
 `REVIEW` independently checks the request, PLAN, architecture, task receipts, validation,
-diff, and constraints. It writes `REVIEW.md` and diagnoses and judges only; it never edits
-application, test, fixture, selector, harness, workflow, or other implementation code. Pass
-requires zero unresolved `CRITICAL` or `IMPORTANT` findings.
+diff, and constraints. It writes its assigned review artifact once and diagnoses and judges
+only; it never edits application, test, fixture, selector, harness, workflow, or other
+implementation code, or overwrites completed evidence. Pass requires zero unresolved
+`CRITICAL` or `IMPORTANT` findings.
 
 Every worker returns a concise receipt:
 
@@ -175,29 +187,58 @@ independent of BUILD and of each other.
 
 ## Advancement
 
-- BUILD requires approval, the active `solo/<slug>` branch, and its exact task artifact.
-- VALIDATE starts only after every BUILD task is `DONE`.
-- REVIEW starts only after `VALIDATION.md` is `PASS`.
-- `READY_FOR_USER` requires all tasks `DONE`, validation `PASS`, review `PASS`, zero
+- BUILD requires approval, the active `solo/<slug>` branch, and its exact task or remediation
+  artifact.
+- VALIDATE starts only after the current BUILD task or remediation is `DONE`.
+- REVIEW starts only after the current validation artifact is `PASS`.
+- `READY_FOR_USER` requires all original tasks `DONE`, the latest validation chain `PASS`,
+  the latest review chain `PASS`, zero
   unresolved `CRITICAL`/`IMPORTANT`, and clean/understood Git state.
 - A missing or non-canonical artifact blocks advancement.
 
-## Validation remediation
+## Immutable remediation chains
 
 Classify each VALIDATE or REVIEW finding as `PRODUCT` (production behavior, contract,
 persistence, financial semantics, safety, or architecture), `REGRESSION` (supported
 behavior or tests), or `TOOLING` (typing, lint, formatting, fixtures, harness, selectors,
 or validation infrastructure only).
 
-Every VALIDATE or REVIEW finding produces a concise remediation packet containing:
-classification, exact issue, owning BUILD task, affected files/seams, required fix, checks
-invalidated by the finding, and the smallest required revalidation/rereview scope.
+Completed `tasks/T###-*.md`, root `VALIDATION.md`/`REVIEW.md`, and remediation artifacts are
+immutable. Never change a completed conclusion, delete an old finding, reopen an original
+task, or reuse an old validation/review receipt.
 
-After a finding, reopen the existing owning BUILD task and dispatch a narrowly scoped BUILD
-worker/session with the concise remediation packet, owning task, and relevant contracts as
-its starting context. The worker may follow directly affected dependencies needed to make
-the fix, but must not broaden into unrelated workstream scope. Production defects, tests,
-fixtures, selectors, and harness code that require edits remain BUILD-owned.
+Classify each finding as an approved-scope `DEFECT` or `NEW SCOPE`. A defect against an
+approved requirement, invariant, acceptance criterion, or architecture contract creates the
+next unused sequential `remediations/R###-<slug>/`; never reuse an existing remediation ID.
+New scope returns to the appropriate developer or architecture approval gate without automatic
+remediation.
+
+Pre-create the new `BUILD.md` with a concise packet containing:
+
+```text
+Remediation ID
+Status
+Origin finding and source artifact
+Finding severity
+Related original task(s)
+Approved requirement or invariant violated
+Exact remediation outcome
+Affected implementation seams
+Explicit out-of-scope items
+Regression evidence required
+Worker Evidence
+```
+
+The packet references the finding that caused it, including the prior remediation artifact
+when applicable. Remediations are bounded to the demonstrated defect, required direct
+changes, and regression coverage; escalate if the approved architecture must materially
+change.
+
+Dispatch a narrowly scoped BUILD worker/session with the packet, relevant contracts, and
+`TASK: R###` / `OWNED_ARTIFACT: remediations/R###-<slug>/BUILD.md`. Reuse the affected BUILD
+worker/session when allowed, but never its execution artifact. The worker may follow directly
+affected dependencies needed to make the fix, but must not broaden scope. Production defects,
+tests, fixtures, selectors, and harness code that require edits remain BUILD-owned.
 
 Solo may directly repair validation environment state that does not change tracked product
 or test code, including resetting/recreating the dedicated test database, running its
@@ -205,33 +246,44 @@ migrations/seeds, restarting workstream-owned test servers, resolving workstream
 ports/processes, and rerunning commands. Solo must not modify application persistence,
 schemas, migrations, or terminate unknown/unowned processes as environment remediation.
 
-After remediation, preserve previously passing independent evidence unless the change could
-reasonably invalidate it. Dispatch a fresh TARGETED VALIDATE worker for only the affected
-checks and directly dependent evidence. Do not automatically rerun the full validation
-matrix.
+Every remediation runs its own immutable chain:
 
-For a REVIEW finding, use:
-REVIEW finding → narrow BUILD remediation → targeted VALIDATE for invalidated evidence
-→ fresh TARGETED REVIEW → PASS
+```text
+remediations/R###-<slug>/BUILD.md
+  → remediations/R###-<slug>/VALIDATION.md
+  → remediations/R###-<slug>/REVIEW.md
+```
 
-The targeted reviewer inspects the finding, relevant contract, remediation diff, affected
-task receipt, and targeted validation evidence rather than rereading the entire workstream
-by default.
+VALIDATE checks the remediation acceptance criteria, regression coverage, directly affected
+behavior, and relevant gates, then writes only `remediations/R###-<slug>/VALIDATION.md`.
+REVIEW independently checks the originating finding, scope, architecture, remediation diff,
+BUILD receipt, and validation evidence, then writes only
+`remediations/R###-<slug>/REVIEW.md`. Use targeted checks by default; do not automatically
+rerun the full matrix. Earlier evidence remains available and is never overwritten.
 
-If VALIDATE fails before REVIEW has begun, a successful targeted validation proceeds to the
-initial broad REVIEW, not a targeted REVIEW.
+For either kind of blocking finding, use:
+finding → next sequential R### BUILD → R### VALIDATE → R### REVIEW
+
+The reviewer inspects the finding, relevant contract, remediation diff, affected task or
+remediation receipt, and validation evidence rather than rereading the entire workstream by
+default. If root validation failed before root review began, the first remediation still gets
+both artifacts; its review is the initial broad review as needed.
 
 Escalate to full validation or review only when remediation materially changes broad
 authority, including architecture, domain or financial semantics, persistence or schema,
 API contract semantics, Strategy/Risk/execution/accounting behavior, or substantial
 cross-cutting implementation.
 
-A remediation return means a VALIDATE or REVIEW finding that sends work back to BUILD.
+A remediation return means a VALIDATE or REVIEW finding that creates the next R### chain.
 The initial independent VALIDATE and REVIEW passes do not count as remediation returns.
-After two remediation returns total across VALIDATE and REVIEW in the same workstream, stop
-automatic cycling. Classify each remaining issue as `PRODUCT BLOCKER`, `VALIDATION / TOOLING
-DEBT`, or `NEW SCOPE`, and report the classification and smallest next action for developer
+The existing two-remediation-return cap remains workstream-wide; do not reset it because a
+new artifact was created. After the cap, classify each remaining issue as `PRODUCT BLOCKER`,
+`VALIDATION / TOOLING DEBT`, or `NEW SCOPE`, and report the smallest next action for developer
 approval before continuing.
+
+Critical and Important findings block closure unless resolved, reclassified with justification,
+or explicitly accepted by the developer where permitted. Minor findings may be remediated,
+accepted, or deferred; they do not automatically create a remediation.
 
 ## Browser validation
 
@@ -256,6 +308,9 @@ unmerged work. Then append `dispatch/COMPLETED.md` and clear `dispatch/ACTIVE.md
 
 If abandoned, preserve/report uncommitted work, obtain approval before destructive cleanup,
 return to `main`, and clear `ACTIVE.md`.
+
+The final `COMPLETED.md` entry may reference the successful remediation chain, but never
+replace its earlier receipts.
 
 ## Specialist skills
 
