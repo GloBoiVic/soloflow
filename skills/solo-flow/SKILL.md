@@ -16,8 +16,8 @@ Classify by consequence and scope, not file count:
 | Class      | Lifecycle                                                                                                             |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- |
 | `Small`    | Solo explores, implements directly, runs a targeted check, and finishes                                               |
-| `Feature`  | PLAN → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval → GIT END                                    |
-| `Critical` | PLAN → ARCHITECT → reconcile PLAN/tasks → approval → GIT START → BUILD → VALIDATE → REVIEW → merge approval → GIT END |
+| `Feature`  | PLAN → approval → GIT START → create tasks → BUILD → VALIDATE → REVIEW → merge approval → GIT END                    |
+| `Critical` | PLAN → ARCHITECT → reconcile PLAN/ARCHITECTURE → approval → GIT START → create tasks → BUILD → VALIDATE → REVIEW → merge approval → GIT END |
 
 Small changes need no plan approval or branch when genuinely obvious and low consequence.
 
@@ -29,7 +29,15 @@ targeted search and reads. Do not bulk-read context, history, or the source tree
 
 ## Workstream
 
-Feature and Critical work use one active workstream and one `solo/<slug>` branch:
+Feature and Critical work use one active workstream and one `solo/<slug>` branch. Before
+approval, planning artifacts only are present:
+
+```text
+Feature:  dispatch/workstreams/<slug>/PLAN.md
+Critical: dispatch/workstreams/<slug>/PLAN.md + ARCHITECTURE.md
+```
+
+After explicit approval and GIT START, Solo creates the BUILD task artifacts:
 
 ```text
 dispatch/
@@ -38,7 +46,7 @@ dispatch/
 └── workstreams/<slug>/
     ├── PLAN.md
     ├── ARCHITECTURE.md       # Critical or meaningful architecture only
-    ├── tasks/T###-<slug>.md  # original BUILD tasks
+    ├── tasks/T###-<slug>.md  # after approval and GIT START
     ├── VALIDATION.md         # original validation
     ├── REVIEW.md             # original review
     └── remediations/R###-<slug>/
@@ -60,15 +68,36 @@ blocks until the current workstream is merged or explicitly abandoned.
 `ACTIVE.md` is mutable operational state: keep the workstream, stage, current `T###` or
 `R###` when applicable, role, and approval state current without adding execution narratives.
 
+## Approval gate
+
+For approval-gated Feature and Critical work, do not create `tasks/`, a `T###` BUILD
+assignment, or a `READY` task before explicit developer implementation approval. Set Feature
+to `PLAN_PENDING_APPROVAL` and Critical to `DEVELOPER_APPROVAL`. Developer feedback is not
+approval: reconcile it into PLAN/ARCHITECTURE and remain at the gate until an explicit signal
+such as `approved`, `looks good, proceed`, `go ahead`, `build it`, or `proceed with
+implementation` approves the current reconciled artifacts.
+
+After approval, record the approval in planning state, perform GIT START, verify the branch,
+and only then create `tasks/T001-<slug>.md` with `Status: READY` and `Role: BUILD`. Small work
+may bypass this gate when its classification permits the direct Small lifecycle.
+
+If a pre-approval task already exists, it is not authorization: do not BUILD from it. Restore
+the appropriate approval phase, preserve any execution evidence as historical unauthorized
+work, and create the next active BUILD assignment only after approval and GIT START. An empty,
+unstarted accidental task may be removed rather than preserved as evidence.
+
 ## Approval
 
-For Feature, Solo creates `dispatch/ACTIVE.md` and `PLAN.md`, explores, decomposes BUILD
-tasks, shows the plan, and waits for explicit developer approval.
+For Feature, Solo creates `dispatch/ACTIVE.md` and `PLAN.md`, explores, sets
+`PLAN_PENDING_APPROVAL`, shows the plan without creating BUILD tasks, and waits for explicit
+developer approval. Reconcile feedback into PLAN and stop again if approval is not explicit.
 
 For Critical, Solo creates the initial PLAN, explores, dispatches `ARCHITECT`, and waits
 until `ARCHITECTURE.md` freezes contracts, domain invariants, valid/invalid/boundary
-examples, and required tests. Solo then reconciles PLAN and BUILD tasks, shows the
-combined contract, and waits for explicit developer approval.
+examples, and required tests. Solo reconciles PLAN and ARCHITECTURE, sets
+`DEVELOPER_APPROVAL`, shows the combined contract without creating BUILD tasks, and waits for
+explicit developer approval. Reconcile feedback into planning artifacts and stop again if
+approval is not explicit.
 
 Before any dispatch or resumed worker call, reconcile material developer feedback into
 the canonical PLAN, ARCHITECTURE, BUILD task, or remediation packet. Never leave material
@@ -89,10 +118,11 @@ rebase, or switch branches. With explicit operation confirmation, run:
 git switch -c solo/<workstream-slug>
 ```
 
-Verify the branch and status, record branch/base SHA in `PLAN.md` and `ACTIVE.md`, and do
-not switch branches again until merge or explicit abandonment. The normal repository root
-and branch are the execution source of truth for Solo, workers, the editor, dev server,
-Git diff, and Local Host.
+Verify the branch and status, record approval and branch/base SHA in `PLAN.md` and `ACTIVE.md`,
+and only then create `tasks/T001-<slug>.md` with `Status: READY` and `Role: BUILD`. Do not
+switch branches again until merge or explicit abandonment. The normal repository root and
+branch are the execution source of truth for Solo, workers, the editor, dev server, Git diff,
+and Local Host.
 
 ## Worker dispatch
 
@@ -109,7 +139,9 @@ OWNED_ARTIFACT: <exact repository-relative path>
 SPECIALIST_SKILLS: <names or none>
 ```
 
-Do not pass the parent conversation. Workers may follow the task dependency chain through
+Do not pass the parent conversation. PLAN or ARCHITECTURE completion alone never authorizes a
+BUILD dispatch. For Feature/Critical, BUILD requires explicit approval, completed GIT START,
+and its post-gate task artifact; Critical ARCHITECT may run before approval. Workers may follow the task dependency chain through
 relevant source, tests, types, schemas, callers, imports, fixtures, config, migrations,
 project context, and CodeGraph. They must not perform unrelated repository archaeology.
 
@@ -123,9 +155,9 @@ project context, and CodeGraph. They must not perform unrelated repository archa
 | VALIDATE  | `VALIDATION.md` or `remediations/R###-*/VALIDATION.md`               |
 | REVIEW    | `REVIEW.md` or `remediations/R###-*/REVIEW.md`                       |
 
-Solo pre-creates the role artifact before dispatch. Only BUILD receives a `T###` task or
-`R###` remediation. Original task assignment and completion remain in the same task file;
-remediation assignment and completion remain in `BUILD.md`:
+Solo pre-creates a role artifact only at its authorized lifecycle stage. Only BUILD receives
+a `T###` task or `R###` remediation. Original task assignment and completion remain in the
+same task file; remediation assignment and completion remain in `BUILD.md`:
 
 ```text
 READY → IN_PROGRESS → DONE | BLOCKED | DONE_WITH_CONCERNS
@@ -187,8 +219,8 @@ independent of BUILD and of each other.
 
 ## Advancement
 
-- BUILD requires approval, the active `solo/<slug>` branch, and its exact task or remediation
-  artifact.
+- BUILD requires approval where required, the active `solo/<slug>` branch, and its exact
+  post-gate task or remediation artifact.
 - VALIDATE starts only after the current BUILD task or remediation is `DONE`.
 - REVIEW starts only after the current validation artifact is `PASS`.
 - `READY_FOR_USER` requires all original tasks `DONE`, the latest validation chain `PASS`,

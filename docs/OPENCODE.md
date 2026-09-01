@@ -36,9 +36,10 @@ OpenCode version. The worker cannot recursively spawn workers.
 
 ## Worker roles
 
-Every dispatch identifies `WORKTREE` as `NONE` and provides the active repository root,
-branch/base SHA, workstream paths, owned artifact, dependencies, and role contract.
-`WORKTREE` is not a normal role in branch-first SoloFlow.
+Every dispatch uses the canonical `ROLE`, `WORKSTREAM`, `BRANCH`, `CWD`, `TASK`,
+`OWNED_ARTIFACT`, and `SPECIALIST_SKILLS` header and provides the active repository root,
+workstream paths, dependencies, and role contract. Branch-first SoloFlow does not use a
+`WORKTREE` dispatch field or role.
 
 ## Specialist skills and MCPs
 

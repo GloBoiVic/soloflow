@@ -8,7 +8,7 @@ repository branch.
 | `solo-flow` | Developer interaction, exploration, planning, Git lifecycle, delegation, and closure |
 | `solo-flow-worker` | Fresh `ARCHITECT`, `BUILD`, `VALIDATE`, or `REVIEW` context |
 | `PLAN.md` | Workstream control plane and task state |
-| `tasks/T###-*.md` | Original implementation assignment and completion receipt |
+| `tasks/T###-*.md` | Post-approval implementation assignment and completion receipt |
 | `VALIDATION.md` | Original independent acceptance evidence |
 | `REVIEW.md` | Original independent review findings |
 | `remediations/R###-*/` | Immutable bounded BUILD → VALIDATION → REVIEW chain |
@@ -23,19 +23,22 @@ feature branch is required unless the change proves more consequential.
 ### Feature
 
 ```text
-Solo → PLAN → task decomposition → developer approval
-→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW → READY_FOR_USER
+Solo → PLAN_PENDING_APPROVAL (no tasks) → developer approval
+→ git switch -c solo/<slug> → create T001 READY → BUILD → VALIDATE → REVIEW → READY_FOR_USER
 → merge approval → GIT END → close dispatch
 ```
 
 ### Critical
 
 ```text
-Solo → PLAN → ARCHITECT → architecture/domain approval
-→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW → READY_FOR_USER
+Solo → PLAN → ARCHITECT → DEVELOPER_APPROVAL (no tasks)
+→ developer approval → git switch -c solo/<slug> → create T001 READY
+→ BUILD → VALIDATE → REVIEW → READY_FOR_USER → merge approval → GIT END
 ```
 
 Critical work freezes semantics, invariants, examples, and required tests before coding.
+Only the planning artifacts exist before approval; PLAN/ARCHITECTURE completion does not
+authorize BUILD dispatch.
 
 ## Context
 

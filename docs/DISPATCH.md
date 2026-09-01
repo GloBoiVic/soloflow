@@ -5,14 +5,18 @@ SoloFlow uses one active workstream and one `solo/<slug>` branch per repository.
 ## Lifecycle
 
 ```text
-request → classify → Solo explores → PLAN → approval when required
-→ git switch -c solo/<slug> → BUILD → VALIDATE → REVIEW
+Feature/Critical request → classify → Solo explores → PLAN (no BUILD task)
+→ approval → git switch -c solo/<slug> → create tasks/T001 → BUILD → VALIDATE → REVIEW
 → READY_FOR_USER → merge approval → GIT END → close dispatch
+
+Small request → classify → Solo explores → implement → targeted check → done
 ```
 
 Small, obvious changes may stay on the current branch. Feature and Critical work create
-`dispatch/ACTIVE.md` and `dispatch/workstreams/<slug>/PLAN.md` before implementation.
-Critical work also requires approved `ARCHITECTURE.md` and domain invariants.
+`dispatch/ACTIVE.md` and planning artifacts before implementation, but no `tasks/` directory,
+BUILD assignment, or `READY` task before explicit developer approval. Critical work also
+requires `ARCHITECTURE.md` with frozen domain invariants before the separate developer
+implementation approval gate.
 
 ## Structure
 
@@ -23,7 +27,7 @@ dispatch/
 └── workstreams/<slug>/
     ├── PLAN.md
     ├── ARCHITECTURE.md       # Critical or meaningful architecture only
-    ├── tasks/T###-<slug>.md
+    ├── tasks/T###-<slug>.md       # after approval and GIT START
     ├── VALIDATION.md
     ├── REVIEW.md
     └── remediations/R###-<slug>/
@@ -36,6 +40,12 @@ dispatch/
 and concerns. Completed task, validation, review, and remediation files are immutable
 evidence. Each role owns only its artifact; downstream artifacts reference receipts rather
 than copy or overwrite them.
+
+Before approval, Feature normally contains only `PLAN.md`; Critical contains `PLAN.md` and
+`ARCHITECTURE.md`. Feature uses `PLAN_PENDING_APPROVAL`; Critical uses
+`DEVELOPER_APPROVAL`. Feedback revises planning artifacts but is not approval. After explicit
+approval, Solo records it, performs and verifies GIT START, then creates `tasks/` and the
+first `T001` BUILD assignment with `Status: READY`.
 
 ## Remediation
 
@@ -59,6 +69,11 @@ still apply, but reuse never means reusing an artifact.
 Before new Feature/Critical work, inspect `git branch --show-current`, `git status --short`,
 and `dispatch/ACTIVE.md`. A related request continues on the current branch. An unrelated
 request is blocked until the active workstream is merged or explicitly abandoned.
+
+PLAN or ARCHITECTURE completion alone never authorizes BUILD dispatch. If an accidental
+pre-approval task exists, do not build from it; restore the approval phase, preserve any
+execution evidence as historical unauthorized work, and create the active assignment only
+after approval and GIT START.
 
 ## Git end
 
