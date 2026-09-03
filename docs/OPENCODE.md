@@ -41,6 +41,9 @@ Every dispatch uses the canonical `ROLE`, `WORKSTREAM`, `BRANCH`, `CWD`, `TASK`,
 workstream paths, dependencies, and role contract. Branch-first SoloFlow does not use a
 `WORKTREE` dispatch field or role.
 
+The underlying OpenCode `task` call must also include `subagent_type: "solo-flow-worker"`.
+The header is prompt content and is not a substitute for the required tool argument.
+
 ## Specialist skills and MCPs
 
 Specialist skills are global and opt-in. CodeGraph and Local Host are optional MCPs kept

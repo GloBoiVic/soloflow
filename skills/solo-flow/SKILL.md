@@ -7,7 +7,7 @@ description: SoloFlow — one lead, one inherited worker, branch-first execution
 
 `solo-flow` is the long-lived lead. `solo-flow-worker` is the only normal child and
 inherits the parent model. Roles are `ARCHITECT`, `BUILD`, `VALIDATE`, and `REVIEW`.
-Fresh context separates roles; same-role sessions may be reused.
+Every worker dispatch uses a fresh context; canonical artifacts provide continuity.
 
 ## Classify
 
@@ -99,7 +99,7 @@ examples, and required tests. Solo reconciles PLAN and ARCHITECTURE, sets
 explicit developer approval. Reconcile feedback into planning artifacts and stop again if
 approval is not explicit.
 
-Before any dispatch or resumed worker call, reconcile material developer feedback into
+Before any dispatch or continued work, reconcile material developer feedback into
 the canonical PLAN, ARCHITECTURE, BUILD task, or remediation packet. Never leave material
 feedback only in conversation context.
 
@@ -138,6 +138,10 @@ TASK: <T### | R### | NONE>
 OWNED_ARTIFACT: <exact repository-relative path>
 SPECIALIST_SKILLS: <names or none>
 ```
+
+Invoke the `task` tool with the required `subagent_type: "solo-flow-worker"` argument on
+every worker call. The dispatch header is prompt content and does not replace that tool
+argument. Include the concise header in the worker prompt; do not omit `subagent_type`.
 
 Do not pass the parent conversation. PLAN or ARCHITECTURE completion alone never authorizes a
 BUILD dispatch. For Feature/Critical, BUILD requires explicit approval, completed GIT START,
@@ -204,18 +208,9 @@ Solo verifies material claims against Git and canonical artifacts before advanci
 
 ## Worker sessions
 
-Create fresh context when a role first starts. Reuse only within the same role:
-
-```text
-ARCHITECT → reuse once only after developer feedback
-BUILD → reuse once only for continuation/remediation
-VALIDATE → fresh context for initial independent validation and every targeted validation
-REVIEW → fresh context for initial independent review and every targeted rereview
-```
-
-After the allowed ARCHITECT or BUILD reuse, dispatch a fresh worker on the same branch and
-workstream. Never reuse one role as another. Targeted VALIDATE and REVIEW workers remain
-independent of BUILD and of each other.
+Dispatch a fresh worker context for every `ARCHITECT`, `BUILD`, `VALIDATE`, and `REVIEW`
+call. Never reuse a prior worker session. Canonical artifacts, the same branch, and the
+workstream provide continuity; roles remain independent.
 
 ## Advancement
 
@@ -266,11 +261,10 @@ when applicable. Remediations are bounded to the demonstrated defect, required d
 changes, and regression coverage; escalate if the approved architecture must materially
 change.
 
-Dispatch a narrowly scoped BUILD worker/session with the packet, relevant contracts, and
-`TASK: R###` / `OWNED_ARTIFACT: remediations/R###-<slug>/BUILD.md`. Reuse the affected BUILD
-worker/session when allowed, but never its execution artifact. The worker may follow directly
-affected dependencies needed to make the fix, but must not broaden scope. Production defects,
-tests, fixtures, selectors, and harness code that require edits remain BUILD-owned.
+Dispatch a fresh, narrowly scoped BUILD worker with the packet, relevant contracts, and
+`TASK: R###` / `OWNED_ARTIFACT: remediations/R###-<slug>/BUILD.md`. The worker may follow
+directly affected dependencies needed to make the fix, but must not broaden scope. Production
+defects, tests, fixtures, selectors, and harness code that require edits remain BUILD-owned.
 
 Solo may directly repair validation environment state that does not change tracked product
 or test code, including resetting/recreating the dedicated test database, running its

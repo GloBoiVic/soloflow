@@ -52,5 +52,5 @@ naturally present on the feature branch; no context-copy mechanism is needed.
 Completed execution and evidence artifacts are never reopened or overwritten. An approved-
 scope defect creates the next sequential `remediations/R###-<slug>/` directory with
 `BUILD.md`, `VALIDATION.md`, and `REVIEW.md`. A new requirement or architecture expansion
-returns to the relevant approval gate. BUILD worker/session reuse and the existing retry cap
-remain in force; only the artifact is new.
+returns to the relevant approval gate. Every dispatch uses a fresh worker context; the
+existing remediation retry cap remains in force, and canonical artifacts provide continuity.

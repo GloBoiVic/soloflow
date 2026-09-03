@@ -61,8 +61,8 @@ out-of-scope items, and required regression evidence. A new requirement or archi
 expansion returns to its approval gate instead.
 
 Validation or review findings create another remediation directory; earlier receipts remain
-unchanged. The existing workstream-wide remediation cap and same-worker BUILD reuse rules
-still apply, but reuse never means reusing an artifact.
+unchanged. The existing workstream-wide remediation cap still applies, and every dispatch uses
+a fresh worker context. Canonical artifacts and the same branch provide continuity.
 
 ## One active branch
 
